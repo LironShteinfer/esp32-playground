@@ -12,7 +12,6 @@
    and put your network there. wifi_credentials.h is ignored by git. */
 #include "wifi_credentials.h"
 
-static const char *TAG = "wifi_connect";
 static EventGroupHandle_t wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
@@ -26,6 +25,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        xEventGroupClearBits(wifi_event_group, WIFI_CONNECTED_BIT);
         if (retry_count < MAX_RETRY) {
             esp_wifi_connect();
             retry_count++;
@@ -88,6 +88,7 @@ void app_main(void)
 
     while (1) {
         vTaskDelay(5000 / portTICK_PERIOD_MS);
+        bits = xEventGroupGetBits(wifi_event_group);   // current state, not the one from startup
         printf("System still running, connected: %s\n",
                (bits & WIFI_CONNECTED_BIT) ? "yes" : "no");
     }

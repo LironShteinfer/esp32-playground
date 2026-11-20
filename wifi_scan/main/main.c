@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -41,32 +42,31 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_wifi_scan_start(&scan_config, true));
 
     uint16_t ap_count = 0;
-    esp_wifi_scan_get_ap_num(&ap_count);
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
     printf("Found %d access points:\n", ap_count);
     
     if (ap_count == 0) {
         printf("No networks found.\n");
     } else {
         wifi_ap_record_t *ap_list = malloc(sizeof(wifi_ap_record_t) * ap_count);
+        if (ap_list == NULL) {
+            ESP_LOGE(TAG, "Not enough memory for %d scan records", ap_count);
+            return;
+        }
         ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&ap_count, ap_list));
-    
 
         for (int i = 0; i < ap_count; i++) {
             printf("%2d: SSID: %-32s | RSSI: %4d dBm | Channel: %2d | BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
-                i + 1,
-                ap_list[i].ssid,
-                ap_list[i].rssi,
-                ap_list[i].primary,
-                ap_list[i].bssid[0],
-                ap_list[i].bssid[1],
-                ap_list[i].bssid[2],
-                ap_list[i].bssid[3],
-                ap_list[i].bssid[4],
-                ap_list[i].bssid[5]);
+                   i + 1,
+                   ap_list[i].ssid,
+                   ap_list[i].rssi,
+                   ap_list[i].primary,
+                   ap_list[i].bssid[0], ap_list[i].bssid[1], ap_list[i].bssid[2],
+                   ap_list[i].bssid[3], ap_list[i].bssid[4], ap_list[i].bssid[5]);
+        }
+        free(ap_list);
     }
-    free(ap_list);
 
-    }
-printf("\n=== Wi-Fi Scan Complete ===\n");
+    printf("\n=== Wi-Fi Scan Complete ===\n");
 }
 
